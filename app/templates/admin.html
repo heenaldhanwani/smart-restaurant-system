@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff dashboard | Smart Restaurant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if login %}
+  <main class="login">
+    <h1>Staff login</h1>
+    <form method="post">
+      <label>Password <input type="password" name="password" autofocus></label>
+      {% if error %}<p class="msg err">{{ error }}</p>{% endif %}
+      <button class="primary">Log in</button>
+    </form>
+    <p><a href="/">Back to the menu</a></p>
+  </main>
+{% else %}
+  <header class="top">
+    <div><h1>Staff dashboard</h1><p>Orders, menu and sales</p></div>
+    <a class="admin-link" href="/admin/logout">Log out</a>
+  </header>
+  <main class="admin">
+    <section>
+      <h2>Sales</h2>
+      <p id="stats">Loading...</p>
+    </section>
+    <section>
+      <h2>Orders</h2>
+      <div id="orders"></div>
+    </section>
+    <section>
+      <h2>Menu items</h2>
+      <form id="add-form" class="add-form">
+        <input id="n-name" placeholder="Item name" required>
+        <input id="n-cat" placeholder="Category" required>
+        <input id="n-price" placeholder="Price in rupees" inputmode="decimal" required>
+        <label class="inline"><input id="n-veg" type="checkbox" checked> Vegetarian</label>
+        <button class="primary">Add item</button>
+      </form>
+      <p id="add-msg" class="msg"></p>
+      <div id="menu-admin"></div>
+    </section>
+  </main>
+  <script>
+    const STATUSES = ["Placed", "Preparing", "Ready", "Served", "Cancelled"];
+    const $ = (id) => document.getElementById(id);
+    const rupee = (n) => "\u20b9" + Number(n).toLocaleString("en-IN");
+    function el(tag, text, cls) {
+      const e = document.createElement(tag);
+      if (text !== undefined) e.textContent = text;
+      if (cls) e.className = cls;
+      return e;
+    }
+    async function api(url, body) {
+      const opt = body ? {method: "POST", headers: {"Content-Type": "application/json"},
+                          body: JSON.stringify(body)} : {};
+      const res = await fetch(url, opt);
+      if (res.status === 401) { location.href = "/admin/login"; return null; }
+      return res.json();
+    }
+    async function loadStats() {
+      const s = await api("/api/admin/stats"); if (!s) return;
+      const top = s.top_items.map((t) => t.name + " (" + t.sold + ")").join(", ") || "no orders yet";
+      $("stats").textContent = s.orders + " orders, " + rupee(s.revenue) + " revenue. Top items: " + top + ".";
+    }
+    async function loadOrders() {
+      const list = await api("/api/admin/orders"); if (!list) return;
+      const box = $("orders"); box.replaceChildren();
+      if (!list.length) { box.append(el("p", "No orders yet.")); return; }
+      list.forEach((o) => {
+        const row = el("div", undefined, "row");
+        row.append(el("strong", "#" + o.id + " " + o.customer_name + ", table " + o.table_no),
+                   el("span", o.items.map((i) => i.qty + " x " + i.name).join(", ")),
+                   el("span", rupee(o.total)));
+        const sel = el("select");
+        STATUSES.forEach((s) => { const op = el("option", s); op.value = s; if (s === o.status) op.selected = true; sel.append(op); });
+        sel.onchange = async () => { await api("/api/admin/orders/" + o.id + "/status", {status: sel.value}); loadStats(); };
+        row.append(sel); box.append(row);
+      });
+    }
+    async function loadMenu() {
+      const list = await api("/api/admin/menu"); if (!list) return;
+      const box = $("menu-admin"); box.replaceChildren();
+      list.forEach((m) => {
+        const row = el("div", undefined, "row");
+        row.append(el("strong", m.name), el("span", m.category + (m.veg ? ", veg" : ", non-veg")),
+                   el("span", rupee(m.price)));
+        const btn = el("button", m.available ? "Hide from menu" : "Show on menu");
+        btn.onclick = async () => { await api("/api/admin/menu/" + m.id + "/toggle", {}); loadMenu(); };
+        row.append(btn); box.append(row);
+      });
+    }
+    $("add-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await api("/api/admin/menu", {name: $("n-name").value, category: $("n-cat").value,
+        price: $("n-price").value, veg: $("n-veg").checked});
+      if (!r) return;
+      $("add-msg").textContent = r.error || "Item added.";
+      if (!r.error) { e.target.reset(); $("n-veg").checked = true; loadMenu(); }
+    };
+    loadStats(); loadOrders(); loadMenu();
+    setInterval(() => { loadStats(); loadOrders(); }, 10000);
+  </script>
+{% endif %}
+</body>
+</html>

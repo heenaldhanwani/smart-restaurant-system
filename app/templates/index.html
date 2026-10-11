@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Restaurant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Smart Restaurant</h1>
+      <p>Order from your table. Open daily 11:00 AM to 11:00 PM.</p>
+    </div>
+    <a class="admin-link" href="/admin">Staff login</a>
+  </header>
+
+  <main class="layout">
+    <section aria-label="Menu">
+      <div id="filters" class="filters" role="group" aria-label="Filter by category"></div>
+      <div id="menu" class="menu-list"></div>
+    </section>
+
+    <aside class="cart" aria-label="Your order">
+      <h2>Your order</h2>
+      <ul id="cart-items" class="cart-items"></ul>
+      <p class="cart-total">Total <strong id="cart-total">&#8377;0</strong></p>
+      <label>Your name <input id="cust-name" autocomplete="name"></label>
+      <label>Table number <input id="table-no" inputmode="numeric"></label>
+      <button id="place-order" class="primary">Place order</button>
+      <p id="order-msg" class="msg" role="status"></p>
+    </aside>
+  </main>
+
+  <button id="chat-toggle" class="chat-toggle" aria-expanded="false">Ask the assistant</button>
+  <section id="chat" class="chat" hidden aria-label="Restaurant Assistant">
+    <header>Restaurant Assistant</header>
+    <div id="chat-log" class="chat-log" aria-live="polite"></div>
+    <form id="chat-form">
+      <input id="chat-input" placeholder="Ask about the menu or an order" autocomplete="off">
+      <button class="primary">Send</button>
+    </form>
+  </section>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
