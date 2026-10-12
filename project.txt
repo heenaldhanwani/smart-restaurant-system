@@ -1,6 +1,6 @@
 Smart Restaurant Management Collaboration Project
-<<<<<<< HEAD
+
 Menu and Ordering Module
-=======
+
 Chatbot Assistant Module
->>>>>>> feature-chatbot-assistant
+
